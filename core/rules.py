@@ -44,18 +44,18 @@ class RuleManager:
             json.dump(self.rules, f, indent=4, ensure_ascii=False)
 
     def add_new_rule(self):
-        # Получаем текст и УБИРАЕМ пробелы по краям (strip)
+        # Получаем текст и УБИРАЕМ пробелы по краям  стритиз
         name = self.entry_name.get().strip()
         port = self.entry_port.get().strip()
 
         # Проверка на пустоту
         if not name or not port:
-            messagebox.showerror("Ошибка", "Название и порт обязательны!")
+            messagebox.showerror("Ошибка", "а мне что блокировать то?!")
             return
 
-        # Проверка, что порт - это число
+        # Проверка, что порт - это число, если нет ты что ебло
         if not port.isdigit():
-            messagebox.showerror("Ошибка", "Порт должен быть числом!")
+            messagebox.showerror("Ошибка", "что ты вписал,!")
             return
 
         new_rule = {

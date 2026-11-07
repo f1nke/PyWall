@@ -23,21 +23,18 @@ class FirewallExecutor:
                 capture_output=True,
                 text=True,
                 startupinfo=startupinfo,
-                encoding='cp866'  # Важно для русской Windows, иначе будут крокозябры
+                encoding='cp866'  #windows дерьма
             )
 
-            # В Windows netsh возвращает 0 при успехе
             if result.returncode == 0:
                 return True, result.stdout.strip()
             else:
-                # Иногда netsh пишет ошибки в stdout, а не stderr
                 error_msg = result.stderr.strip() if result.stderr else result.stdout.strip()
                 return False, error_msg
         except Exception as e:
             return False, str(e)
 
     def apply_rule(self, rule):
-        """Применяет правило"""
         if not self.is_admin():
             return False, "Требуются права администратора!"
 
@@ -45,20 +42,36 @@ class FirewallExecutor:
         action = 'block' if rule.get('action') == 'block' else 'allow'
         direction = 'in' if rule.get('direction') == 'in' else 'out'
         port = rule.get('port')
+        ip = rule.get('ip', '')
 
-        # Сначала удаляем старое правило с таким же именем (чтобы не было дублей)
         self.delete_rule(name)
 
+        # базовая команда минемум
         cmd = [
             'netsh', 'advfirewall', 'firewall', 'add', 'rule',
             f'name={name}',
             f'dir={direction}',
             f'action={action}',
-            'protocol=TCP',
-            f'localport={port}'
+            'profile=any'
         ]
 
-        return self._run_netsh(cmd)
+        # 1. если указан IP
+        if ip:
+            # Убираем лишние пробелы и оборачиваем весь список в кавычки
+            # Если IP один, кавычки тоже не помешают
+            ip_clean = ip.replace(" ", "")  # убираем все пробелы
+            cmd.append(f'remoteip="{ip_clean}"')
+
+        # 2. если указан порт
+        if port:
+            if direction == 'out':
+                cmd.extend(['protocol=TCP', f'remoteport={port}'])
+            else:
+                cmd.extend(['protocol=TCP', f'localport={port}'])
+
+        success, msg = self._run_netsh(cmd)
+
+        return success, msg
 
     def delete_rule(self, rule_name):
         """Удаляет правило"""
